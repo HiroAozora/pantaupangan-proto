@@ -1,0 +1,548 @@
+// data.js - Dataset simulasi realistis PantauPangan
+// Terintegrasi dengan data/data.json untuk mendukung pembukaan lokal (file:///) tanpa kendala CORS
+
+const INITIAL_REGIONS = [
+  {
+    id: "ID-1207",
+    name: "Kabupaten Deli Serdang",
+    province: "Sumatera Utara",
+    lat: 3.5539,
+    lng: 98.7444,
+    fapar_anomaly: -2.1,
+    rainfall_30d: 42,
+    rainfall_forecast: "below_normal",
+    historical_production: [380000, 365000, 310000],
+    harvested_area: 72000,
+    crop_type: "Padi Sawah",
+    risk_score: 82,
+    risk_level: "high",
+    confidence: 0.88,
+    status: "unverified",
+    prediction_window: "30-45 hari",
+    factors: [
+      { name: "FAPAR Anomaly (Vegetasi)", value: "-2.1 std dev", impact: "high" },
+      { name: "Defisit Curah Hujan", value: "42 mm (Normal: 120 mm)", impact: "high" },
+      { name: "Tren Produksi Historis", value: "-15% YoY", impact: "medium" }
+    ],
+    recommendation: "Penyaluran benih tahan kering, pompanisasi darurat dari Sungai Ular, dan kesiapsiagaan cadangan beras lokal.",
+    last_updated: "2026-09-24T06:30:00Z"
+  },
+  {
+    id: "ID-1206",
+    name: "Kabupaten Karo",
+    province: "Sumatera Utara",
+    lat: 3.1172,
+    lng: 98.5028,
+    fapar_anomaly: -1.4,
+    rainfall_30d: 65,
+    rainfall_forecast: "normal",
+    historical_production: [195000, 190000, 178000],
+    harvested_area: 34000,
+    crop_type: "Hortikultura & Jagung",
+    risk_score: 64,
+    risk_level: "medium",
+    confidence: 0.82,
+    status: "verified",
+    prediction_window: "45-60 hari",
+    factors: [
+      { name: "FAPAR Anomaly", value: "-1.4 std dev", impact: "medium" },
+      { name: "Fluktuasi Hujan Vulkanik", value: "65 mm", impact: "medium" }
+    ],
+    recommendation: "Proteksi sumur bor dangkal dan percepatan distribusi pupuk organik.",
+    last_updated: "2026-09-23T09:15:00Z"
+  },
+  {
+    id: "ID-1208",
+    name: "Kabupaten Simalungun",
+    province: "Sumatera Utara",
+    lat: 2.9667,
+    lng: 99.0667,
+    fapar_anomaly: -0.3,
+    rainfall_30d: 110,
+    rainfall_forecast: "normal",
+    historical_production: [410000, 420000, 415000],
+    harvested_area: 84000,
+    crop_type: "Padi Sawah",
+    risk_score: 28,
+    risk_level: "low",
+    confidence: 0.91,
+    status: "verified",
+    prediction_window: "60 hari",
+    factors: [
+      { name: "FAPAR Anomaly", value: "-0.3 std dev (Normal)", impact: "low" },
+      { name: "Kecukupan Air Irigasi", value: "Irigasi Bah Bolon Prima", impact: "low" }
+    ],
+    recommendation: "Pemeliharaan saluran sekunder dan pemantauan hama wereng coklat.",
+    last_updated: "2026-09-24T08:00:00Z"
+  },
+  {
+    id: "ID-1209",
+    name: "Kabupaten Asahan",
+    province: "Sumatera Utara",
+    lat: 2.9833,
+    lng: 99.6167,
+    fapar_anomaly: -1.8,
+    rainfall_30d: 50,
+    rainfall_forecast: "below_normal",
+    historical_production: [320000, 310000, 275000],
+    harvested_area: 58000,
+    crop_type: "Padi Sawah",
+    risk_score: 75,
+    risk_level: "high",
+    confidence: 0.86,
+    status: "unverified",
+    prediction_window: "30 hari",
+    factors: [
+      { name: "Defisit Pasokan Aliran Sungai Asahan", value: "Debit -25%", impact: "high" },
+      { name: "FAPAR Anomaly", value: "-1.8 std dev", impact: "high" }
+    ],
+    recommendation: "Pembersihan endapan sedimentasi saluran irigasi Sei Silau dan bantuan pompa air.",
+    last_updated: "2026-09-22T14:10:00Z"
+  },
+  {
+    id: "ID-1218",
+    name: "Kabupaten Serdang Bedagai",
+    province: "Sumatera Utara",
+    lat: 3.4167,
+    lng: 99.1500,
+    fapar_anomaly: -0.8,
+    rainfall_30d: 85,
+    rainfall_forecast: "normal",
+    historical_production: [450000, 460000, 440000],
+    harvested_area: 89000,
+    crop_type: "Padi Sawah (Lumbung Sumut)",
+    risk_score: 42,
+    risk_level: "low",
+    confidence: 0.89,
+    status: "verified",
+    prediction_window: "60 hari",
+    factors: [
+      { name: "Kondisi Tanaman Prima", value: "FAPAR -0.8 std dev", impact: "low" },
+      { name: "Debit Bendung Sei Ular Stabil", value: "Normal", impact: "low" }
+    ],
+    recommendation: "Optimalisasi pasokan pupuk bersubsidi untuk persiapan musim gadu.",
+    last_updated: "2026-09-24T09:00:00Z"
+  },
+  {
+    id: "ID-3212",
+    name: "Kabupaten Indramayu",
+    province: "Jawa Barat",
+    lat: -6.3264,
+    lng: 108.3200,
+    fapar_anomaly: -2.6,
+    rainfall_30d: 28,
+    rainfall_forecast: "critical_low",
+    historical_production: [820000, 780000, 690000],
+    harvested_area: 118000,
+    crop_type: "Padi Sawah (Lumbung Nasional)",
+    risk_score: 89,
+    risk_level: "high",
+    confidence: 0.94,
+    status: "unverified",
+    prediction_window: "20-30 hari",
+    factors: [
+      { name: "FAPAR Anomaly Kritis", value: "-2.6 std dev", impact: "high" },
+      { name: "El-Nino Micro Impact", value: "Curah hujan 28 mm", impact: "high" },
+      { name: "Salinitas Air Muara", value: "Intrusi air laut saluran irigasi", impact: "high" }
+    ],
+    recommendation: "Aktivasi tanggap darurat kekeringan: buka pintu waduk Jatigede koridor utara dan droping pompa diesel portabel.",
+    last_updated: "2026-09-24T06:00:00Z"
+  },
+  {
+    id: "ID-3213",
+    name: "Kabupaten Subang",
+    province: "Jawa Barat",
+    lat: -6.5686,
+    lng: 107.7600,
+    fapar_anomaly: -1.7,
+    rainfall_30d: 55,
+    rainfall_forecast: "below_normal",
+    historical_production: [560000, 540000, 490000],
+    harvested_area: 86000,
+    crop_type: "Padi Sawah",
+    risk_score: 71,
+    risk_level: "high",
+    confidence: 0.86,
+    status: "verified",
+    prediction_window: "30-45 hari",
+    factors: [
+      { name: "FAPAR Anomaly", value: "-1.7 std dev", impact: "high" },
+      { name: "Penurunan Debit Tarum Timur", value: "Debit -35%", impact: "medium" }
+    ],
+    recommendation: "Gilir giring air irigasi antar-blok dan pengawasan gadu dini.",
+    last_updated: "2026-09-21T11:20:00Z"
+  },
+  {
+    id: "ID-3215",
+    name: "Kabupaten Karawang",
+    province: "Jawa Barat",
+    lat: -6.3072,
+    lng: 107.3072,
+    fapar_anomaly: -1.1,
+    rainfall_30d: 68,
+    rainfall_forecast: "normal",
+    historical_production: [710000, 720000, 680000],
+    harvested_area: 98000,
+    crop_type: "Padi Sawah",
+    risk_score: 52,
+    risk_level: "medium",
+    confidence: 0.87,
+    status: "verified",
+    prediction_window: "45 hari",
+    factors: [
+      { name: "Alih Fungsi Lahan Industri", value: "-3.2% luas baku", impact: "medium" },
+      { name: "FAPAR Anomaly", value: "-1.1 std dev", impact: "medium" }
+    ],
+    recommendation: "Perlindungan Lahan Pertanian Pangan Berkelanjutan (LP2B) dan efisiensi air Tarum Barat.",
+    last_updated: "2026-09-24T07:10:00Z"
+  },
+  {
+    id: "ID-3315",
+    name: "Kabupaten Grobogan",
+    province: "Jawa Tengah",
+    lat: -7.1122,
+    lng: 110.9167,
+    fapar_anomaly: -2.3,
+    rainfall_30d: 32,
+    rainfall_forecast: "critical_low",
+    historical_production: [740000, 710000, 630000],
+    harvested_area: 122000,
+    crop_type: "Padi & Jagung",
+    risk_score: 85,
+    risk_level: "high",
+    confidence: 0.90,
+    status: "verified",
+    prediction_window: "25-40 hari",
+    factors: [
+      { name: "Kekeringan Meteorologis", value: "Curah hujan 32 mm", impact: "high" },
+      { name: "FAPAR Anomaly Tajam", value: "-2.3 std dev", impact: "high" }
+    ],
+    recommendation: "Mobilisasi sumur pantek dan percepatan asuransi usaha tani padi (AUTP).",
+    last_updated: "2026-09-23T16:00:00Z"
+  },
+  {
+    id: "ID-3310",
+    name: "Kabupaten Klaten",
+    province: "Jawa Tengah",
+    lat: -7.7056,
+    lng: 110.6044,
+    fapar_anomaly: -0.6,
+    rainfall_30d: 92,
+    rainfall_forecast: "normal",
+    historical_production: [310000, 315000, 312000],
+    harvested_area: 52000,
+    crop_type: "Padi Beras Rojolele",
+    risk_score: 35,
+    risk_level: "low",
+    confidence: 0.89,
+    status: "verified",
+    prediction_window: "60 hari",
+    factors: [
+      { name: "Mata Air Alami Prima", value: "Debit Umbul Ponggok dsk stabil", impact: "low" },
+      { name: "FAPAR Normal", value: "-0.6 std dev", impact: "low" }
+    ],
+    recommendation: "Monitoring rutin serapan pupuk berimbang.",
+    last_updated: "2026-09-24T07:45:00Z"
+  },
+  {
+    id: "ID-3314",
+    name: "Kabupaten Sragen",
+    province: "Jawa Tengah",
+    lat: -7.4264,
+    lng: 111.0222,
+    fapar_anomaly: -1.9,
+    rainfall_30d: 45,
+    rainfall_forecast: "below_normal",
+    historical_production: [430000, 410000, 370000],
+    harvested_area: 71000,
+    crop_type: "Padi Sawah",
+    risk_score: 78,
+    risk_level: "high",
+    confidence: 0.88,
+    status: "unverified",
+    prediction_window: "30 hari",
+    factors: [
+      { name: "Kekeringan Wilayah Utara Bengawan", value: "Defisit air 45%", impact: "high" },
+      { name: "FAPAR Anomaly Negatif", value: "-1.9 std dev", impact: "high" }
+    ],
+    recommendation: "Bantuan pompa air sumur dalam dan percepatan panen muda bagi petak terancam puso.",
+    last_updated: "2026-09-23T10:20:00Z"
+  },
+  {
+    id: "ID-3524",
+    name: "Kabupaten Lamongan",
+    province: "Jawa Timur",
+    lat: -7.1206,
+    lng: 112.4150,
+    fapar_anomaly: -1.2,
+    rainfall_30d: 58,
+    rainfall_forecast: "below_normal",
+    historical_production: [910000, 890000, 840000],
+    harvested_area: 145000,
+    crop_type: "Padi Sawah & Tambak",
+    risk_score: 62,
+    risk_level: "medium",
+    confidence: 0.85,
+    status: "unverified",
+    prediction_window: "40-50 hari",
+    factors: [
+      { name: "Fluktuasi Waduk Gondang", value: "Elevasi air mendekati ambang batas", impact: "medium" },
+      { name: "FAPAR Anomaly", value: "-1.2 std dev", impact: "medium" }
+    ],
+    recommendation: "Manajemen buka-tutup sudetan Bengawan Solo dan distribusi benih toleran salin.",
+    last_updated: "2026-09-22T13:40:00Z"
+  },
+  {
+    id: "ID-3521",
+    name: "Kabupaten Ngawi",
+    province: "Jawa Timur",
+    lat: -7.4042,
+    lng: 111.4458,
+    fapar_anomaly: -0.4,
+    rainfall_30d: 98,
+    rainfall_forecast: "normal",
+    historical_production: [780000, 790000, 785000],
+    harvested_area: 120000,
+    crop_type: "Padi Sawah",
+    risk_score: 30,
+    risk_level: "low",
+    confidence: 0.92,
+    status: "verified",
+    prediction_window: "60 hari",
+    factors: [
+      { name: "Jaringan Sumur Submersible", value: "Tercukupi mandiri", impact: "low" },
+      { name: "FAPAR Sehat", value: "-0.4 std dev", impact: "low" }
+    ],
+    recommendation: "Pertahankan kalender tanam musim gadu kedua.",
+    last_updated: "2026-09-24T05:20:00Z"
+  },
+  {
+    id: "ID-3522",
+    name: "Kabupaten Bojonegoro",
+    province: "Jawa Timur",
+    lat: -7.1500,
+    lng: 111.8819,
+    fapar_anomaly: -2.0,
+    rainfall_30d: 38,
+    rainfall_forecast: "below_normal",
+    historical_production: [580000, 560000, 495000],
+    harvested_area: 95000,
+    crop_type: "Padi Sawah Bantaran",
+    risk_score: 81,
+    risk_level: "high",
+    confidence: 0.89,
+    status: "unverified",
+    prediction_window: "30 hari",
+    factors: [
+      { name: "Surutnya Aliran Bengawan Solo", value: "Tinggi muka air kritis", impact: "high" },
+      { name: "FAPAR Anomaly Kritis", value: "-2.0 std dev", impact: "high" }
+    ],
+    recommendation: "Penyediaan genset pompa terapung di bantaran sungai dan subsidi solar petani.",
+    last_updated: "2026-09-23T15:30:00Z"
+  },
+  {
+    id: "ID-7315",
+    name: "Kabupaten Pinrang",
+    province: "Sulawesi Selatan",
+    lat: -3.7917,
+    lng: 119.6483,
+    fapar_anomaly: -1.9,
+    rainfall_30d: 48,
+    rainfall_forecast: "below_normal",
+    historical_production: [580000, 560000, 510000],
+    harvested_area: 92000,
+    crop_type: "Padi Sawah (Lumbung Timur)",
+    risk_score: 76,
+    risk_level: "high",
+    confidence: 0.87,
+    status: "unverified",
+    prediction_window: "30 hari",
+    factors: [
+      { name: "FAPAR Anomaly Kering", value: "-1.9 std dev", impact: "high" },
+      { name: "Sedimentasi Bendung Saddang", value: "Aliran ke petak tersier terganggu", impact: "high" }
+    ],
+    recommendation: "Pembersihan pintu intake Saddang dan distribusi 40 unit pompa air mobile.",
+    last_updated: "2026-09-23T11:00:00Z"
+  },
+  {
+    id: "ID-7314",
+    name: "Kabupaten Sidrap",
+    province: "Sulawesi Selatan",
+    lat: -3.9214,
+    lng: 119.8647,
+    fapar_anomaly: -1.1,
+    rainfall_30d: 70,
+    rainfall_forecast: "normal",
+    historical_production: [490000, 500000, 480000],
+    harvested_area: 78000,
+    crop_type: "Padi & Jagung",
+    risk_score: 55,
+    risk_level: "medium",
+    confidence: 0.83,
+    status: "verified",
+    prediction_window: "45 hari",
+    factors: [
+      { name: "FAPAR Moderat", value: "-1.1 std dev", impact: "medium" }
+    ],
+    recommendation: "Optimalisasi saluran tersier dan pemantauan cadangan gabah penggilingan.",
+    last_updated: "2026-09-20T10:10:00Z"
+  },
+  {
+    id: "ID-7308",
+    name: "Kabupaten Bone",
+    province: "Sulawesi Selatan",
+    lat: -4.6861,
+    lng: 120.1806,
+    fapar_anomaly: -0.5,
+    rainfall_30d: 105,
+    rainfall_forecast: "normal",
+    historical_production: [620000, 630000, 625000],
+    harvested_area: 105000,
+    crop_type: "Padi & Kedelai",
+    risk_score: 32,
+    risk_level: "low",
+    confidence: 0.90,
+    status: "verified",
+    prediction_window: "60 hari",
+    factors: [
+      { name: "Ketersediaan Air Cukup", value: "Curah hujan 105 mm", impact: "low" },
+      { name: "FAPAR Normal", value: "-0.5 std dev", impact: "low" }
+    ],
+    recommendation: "Pengendalian organisme pengganggu tanaman (OPT) secara terpadu.",
+    last_updated: "2026-09-24T07:30:00Z"
+  }
+];
+
+const INITIAL_INTERVENTIONS = [
+  {
+    id: "INT-2026-001",
+    region_id: "ID-3212",
+    region_name: "Kabupaten Indramayu",
+    title: "Pemberian 50 Unit Pompa Air Mobile & Buka Saluran Sekunder Jatigede",
+    type: "Infrastruktur Irigasi Darurat",
+    target_beneficiaries: "4.200 Petani (Kec. Losarang & Kandanghaur)",
+    budget_source: "BTT APBD & Kementan",
+    status: "in_progress",
+    predicted_risk_before: 89,
+    target_risk_after: 54,
+    created_by: "Ibu Sari (Bappeda)",
+    created_at: "2026-09-21T09:00:00Z",
+    deadline: "2026-10-10",
+    notes: "Fokus penyelamatan 6.500 hektar padi umur 45 hari dari ancaman puso."
+  },
+  {
+    id: "INT-2026-002",
+    region_id: "ID-1207",
+    region_name: "Kabupaten Deli Serdang",
+    title: "Subsidi Benih Padi Ciherang Tahan Kering & Pompanisasi Sungai Ular",
+    type: "Bantuan Sarpras & Benih",
+    target_beneficiaries: "2.800 Petani (Kec. Pantai Labu & Beringin)",
+    budget_source: "Dinas Ketahanan Pangan Sumut",
+    status: "planned",
+    predicted_risk_before: 82,
+    target_risk_after: 48,
+    created_by: "Budi Santoso (Operator)",
+    created_at: "2026-09-23T15:20:00Z",
+    deadline: "2026-10-15",
+    notes: "Menunggu verifikasi lapangan tim penyuluh pertanian kecamatan."
+  },
+  {
+    id: "INT-2026-003",
+    region_id: "ID-3315",
+    region_name: "Kabupaten Grobogan",
+    title: "Percepatan Klaim Asuransi Usaha Tani Padi (AUTP) & Operasi Sumur Pantek",
+    type: "Kompensasi Finansial & Air",
+    target_beneficiaries: "3.500 Petani (Grobogan Timur)",
+    budget_source: "Jasindo & Dinsos",
+    status: "completed",
+    predicted_risk_before: 85,
+    target_risk_after: 42,
+    created_by: "Admin Bappeda",
+    created_at: "2026-09-10T08:00:00Z",
+    deadline: "2026-09-22",
+    notes: "Tuntas disalurkan. 1.200 ha sawah terselamatkan dari gagal panen total."
+  },
+  {
+    id: "INT-2026-004",
+    region_id: "ID-7315",
+    region_name: "Kabupaten Pinrang",
+    title: "Pengerukan Sedimentasi Pintu Air Bendung Saddang",
+    type: "Normalisasi Saluran",
+    target_beneficiaries: "1.900 Petani",
+    budget_source: "BBWS Pompengan Jeneberang",
+    status: "in_progress",
+    predicted_risk_before: 76,
+    target_risk_after: 45,
+    created_by: "Operator Pinrang",
+    created_at: "2026-09-23T11:45:00Z",
+    deadline: "2026-10-05",
+    notes: "Excavator amphibi dikerahkan ke titik intake utama."
+  }
+];
+
+// Helper functions untuk LocalStorage persistence (v2 dataset sync)
+const STORAGE_KEYS = {
+  REGIONS: "pantau_pangan_regions_v2",
+  INTERVENTIONS: "pantau_pangan_interventions_v2",
+  CURRENT_ROLE: "pantau_pangan_role_v2",
+  LOGS: "pantau_pangan_logs_v2"
+};
+
+function getStoredRegions() {
+  const data = localStorage.getItem(STORAGE_KEYS.REGIONS);
+  if (!data) {
+    localStorage.setItem(STORAGE_KEYS.REGIONS, JSON.stringify(INITIAL_REGIONS));
+    return INITIAL_REGIONS;
+  }
+  return JSON.parse(data);
+}
+
+function saveRegions(regions) {
+  localStorage.setItem(STORAGE_KEYS.REGIONS, JSON.stringify(regions));
+}
+
+function getStoredInterventions() {
+  const data = localStorage.getItem(STORAGE_KEYS.INTERVENTIONS);
+  if (!data) {
+    localStorage.setItem(STORAGE_KEYS.INTERVENTIONS, JSON.stringify(INITIAL_INTERVENTIONS));
+    return INITIAL_INTERVENTIONS;
+  }
+  return JSON.parse(data);
+}
+
+function saveInterventions(interventions) {
+  localStorage.setItem(STORAGE_KEYS.INTERVENTIONS, JSON.stringify(interventions));
+}
+
+function getStoredRole() {
+  return localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE) || "operator";
+}
+
+function saveRole(role) {
+  localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, role);
+}
+
+function getStoredLogs() {
+  const data = localStorage.getItem(STORAGE_KEYS.LOGS);
+  if (!data) {
+    const initialLogs = [
+      { timestamp: "2026-09-24T06:00:00Z", user: "AI Engine", action: "Deteksi risiko tinggi di Kab. Indramayu (Skor 89)" },
+      { timestamp: "2026-09-23T15:20:00Z", user: "Budi (Operator)", action: "Membuat draft intervensi INT-2026-002 untuk Kab. Deli Serdang" },
+      { timestamp: "2026-09-22T09:15:00Z", user: "Ibu Sari (Bappeda)", action: "Verifikasi prediksi risiko Kab. Karo" }
+    ];
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(initialLogs));
+    return initialLogs;
+  }
+  return JSON.parse(data);
+}
+
+function addLog(action, user = "Operator") {
+  const logs = getStoredLogs();
+  logs.unshift({
+    timestamp: new Date().toISOString(),
+    user: user,
+    action: action
+  });
+  if (logs.length > 20) logs.pop();
+  localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs));
+}

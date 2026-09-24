@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PantauPangan - Sistem Peringatan Dini Ketahanan Pangan</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans / Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6.5.1 for crisp non-emoji icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Custom Apple Light Theme CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- TOP NAVIGATION BAR (Apple Glass Style) -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#" class="brand" onclick="switchTab('map-view'); return false;">
+        <div class="brand-icon">
+          <i class="fa-solid fa-wheat-awn"></i>
+        </div>
+        <div class="brand-title">
+          <span>PantauPangan</span>
+          <span class="brand-badge">v1.0</span>
+        </div>
+      </a>
+
+      <!-- Segmented Navigation Pills -->
+      <ul class="nav-links">
+        <li>
+          <button class="nav-btn active" id="nav-map" onclick="switchTab('map-view')">
+            <i class="fa-solid fa-map"></i> Peta Risiko
+          </button>
+        </li>
+        <li class="role-restricted" data-roles="operator,admin">
+          <button class="nav-btn" id="nav-operator" onclick="switchTab('operator-view')">
+            <i class="fa-solid fa-clipboard-check"></i> Operator
+          </button>
+        </li>
+        <li class="role-restricted" data-roles="bappeda,admin">
+          <button class="nav-btn" id="nav-policy" onclick="switchTab('policy-view')">
+            <i class="fa-solid fa-chart-pie"></i> Bappeda
+          </button>
+        </li>
+        <li class="role-restricted" data-roles="operator,bappeda,admin">
+          <button class="nav-btn" id="nav-interventions" onclick="switchTab('intervention-view')">
+            <i class="fa-solid fa-hand-holding-hand"></i> Intervensi
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" id="nav-trends" onclick="switchTab('trends-view')">
+            <i class="fa-solid fa-chart-line"></i> Tren
+          </button>
+        </li>
+        <li>
+          <button class="nav-btn" id="nav-public" onclick="switchTab('public-view')">
+            <i class="fa-solid fa-users"></i> Publik
+          </button>
+        </li>
+      </ul>
+
+      <!-- Role Switcher -->
+      <div class="role-switcher-wrap">
+        <i class="fa-solid fa-user-shield text-muted" style="font-size: 0.75rem;"></i>
+        <span class="role-label">Peran</span>
+        <select id="role-select" class="role-select" onchange="handleRoleChange(this.value)">
+          <option value="operator">Operator Dinas</option>
+          <option value="bappeda">Kepala Bappeda</option>
+          <option value="public">Publik / Petani</option>
+          <option value="admin">Administrator</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-content">
+
+    <!-- KPI STATS SUMMARY ROW -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Risiko Tinggi</span>
+          <span class="stat-value" id="stat-high-count">0</span>
+          <span class="stat-sub">Skor &gt; 70 • Butuh aksi cepat</span>
+        </div>
+        <div class="stat-icon-box high">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Risiko Sedang</span>
+          <span class="stat-value" id="stat-medium-count">0</span>
+          <span class="stat-sub">Skor 50 - 70 • Pemantauan</span>
+        </div>
+        <div class="stat-icon-box medium">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Aman / Stabil</span>
+          <span class="stat-value" id="stat-low-count">0</span>
+          <span class="stat-sub">Skor &lt; 50 • Produksi normal</span>
+        </div>
+        <div class="stat-icon-box low">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <span class="stat-label">Intervensi Aktif</span>
+          <span class="stat-value" id="stat-intervention-count">0</span>
+          <span class="stat-sub">Program sedang berjalan</span>
+        </div>
+        <div class="stat-icon-box primary">
+          <i class="fa-solid fa-truck-droplet"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: PETA RISIKO INTERAKTIF (F-01)       -->
+    <!-- ========================================== -->
+    <section id="map-view" class="tab-view active">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-map-location-dot text-primary"></i> Peta Risiko Gagal Panen
+          </h1>
+          <p class="section-desc">Monitoring anomali vegetasi satelit FAPAR dan indeks defisit cuaca per kabupaten.</p>
+        </div>
+        <div class="action-buttons role-restricted" data-roles="operator,bappeda,admin" style="flex-direction: row;">
+          <button class="btn btn-secondary btn-sm" onclick="exportReportModal()">
+            <i class="fa-solid fa-arrow-down-to-line"></i> Ekspor Laporan
+          </button>
+        </div>
+      </div>
+
+      <div class="map-workspace">
+        <!-- Interactive Map Container -->
+        <div class="map-card">
+          <div class="map-toolbar">
+            <div class="filter-group">
+              <label for="filter-province" class="form-label" style="margin: 0;">Provinsi:</label>
+              <select id="filter-province" class="custom-select" onchange="applyMapFilters()">
+                <option value="all">Semua Provinsi</option>
+                <option value="Sumatera Utara">Sumatera Utara</option>
+                <option value="Jawa Barat">Jawa Barat</option>
+                <option value="Jawa Tengah">Jawa Tengah</option>
+                <option value="Jawa Timur">Jawa Timur</option>
+                <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+              </select>
+
+              <label for="filter-risk" class="form-label" style="margin: 0; margin-left: 0.25rem;">Tingkat:</label>
+              <select id="filter-risk" class="custom-select" onchange="applyMapFilters()">
+                <option value="all">Semua Tingkat</option>
+                <option value="high">Tinggi (Merah)</option>
+                <option value="medium">Sedang (Kuning)</option>
+                <option value="low">Rendah (Hijau)</option>
+              </select>
+
+              <label for="filter-window" class="form-label" style="margin: 0; margin-left: 0.25rem;">Jendela:</label>
+              <select id="filter-window" class="custom-select" onchange="applyMapFilters()">
+                <option value="all">Semua Periode</option>
+                <option value="30-45 hari">30-45 hari</option>
+                <option value="45-60 hari">45-60 hari</option>
+                <option value="60 hari">60 hari</option>
+              </select>
+            </div>
+
+            <div class="map-legend">
+              <span class="legend-item"><span class="legend-dot high"></span> Tinggi</span>
+              <span class="legend-item"><span class="legend-dot medium"></span> Sedang</span>
+              <span class="legend-item"><span class="legend-dot low"></span> Rendah</span>
+            </div>
+          </div>
+
+          <div id="map-container"></div>
+        </div>
+
+        <!-- Sidebar Detail Terpilih -->
+        <div class="detail-card" id="region-detail-panel">
+          <div class="empty-state">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Pilih Kabupaten di Peta</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Klik titik wilayah pada peta untuk melihat parameter satelit dan rekomendasi tindakan.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: DASHBOARD OPERATOR (F-03 & F-04)    -->
+    <!-- ========================================== -->
+    <section id="operator-view" class="tab-view">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-clipboard-check text-primary"></i> Meja Kerja Operator
+          </h1>
+          <p class="section-desc">Input data panen aktual dan verifikasi hasil prediksi model AI.</p>
+        </div>
+      </div>
+
+      <!-- DAFTAR TUGAS OPERATOR (PRD 4.1 Step 2) -->
+      <div class="stats-grid" style="margin-bottom: 1.25rem;">
+        <div class="stat-card" style="border-left: 3px solid var(--risk-medium); padding: 1rem 1.25rem;">
+          <div class="stat-info">
+            <span class="stat-label">Prediksi Perlu Diverifikasi</span>
+            <span class="stat-value" id="op-task-unverified-count">0</span>
+            <span class="stat-sub">Menunggu konfirmasi lapangan</span>
+          </div>
+          <div class="stat-icon-box medium">
+            <i class="fa-solid fa-user-clock"></i>
+          </div>
+        </div>
+
+        <div class="stat-card" style="border-left: 3px solid var(--primary); padding: 1rem 1.25rem;">
+          <div class="stat-info">
+            <span class="stat-label">Target Input Panen</span>
+            <span class="stat-value" id="op-task-input-count">0</span>
+            <span class="stat-sub">Kabupaten binaan terdaftar</span>
+          </div>
+          <div class="stat-icon-box primary">
+            <i class="fa-solid fa-pen-nib"></i>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 340px 1fr; gap: 1.25rem;">
+        <!-- Form Input Data Produksi -->
+        <div class="form-card">
+          <h2 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-pen-to-square text-primary"></i> Input Data Panen
+          </h2>
+          <form id="form-production" onsubmit="handleProductionSubmit(event)">
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" for="prod-region">Kabupaten:</label>
+              <select id="prod-region" class="form-control" required>
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" for="prod-month">Bulan Pelaporan:</label>
+              <select id="prod-month" class="form-control" required>
+                <option value="September 2026">September 2026</option>
+                <option value="Agustus 2026">Agustus 2026</option>
+                <option value="Juli 2026">Juli 2026</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" for="prod-ton">Produksi Panen (Ton):</label>
+              <input type="number" id="prod-ton" class="form-control" placeholder="Contoh: 320000" required min="1000">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.15rem;">
+              <label class="form-label" for="prod-ha">Luas Panen (Hektar):</label>
+              <input type="number" id="prod-ha" class="form-control" placeholder="Contoh: 65000" required min="100">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+              <i class="fa-solid fa-bolt"></i> Simpan & Perbarui Risiko
+            </button>
+          </form>
+        </div>
+
+        <!-- Daftar Prediksi Risiko & Aksi Operator -->
+        <div class="table-card">
+          <div style="padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.45rem;">
+              <i class="fa-solid fa-list-check text-primary"></i> Daftar Verifikasi Prediksi
+            </h2>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Verifikasi atau override estimasi model</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <th>Provinsi</th>
+                  <th>Skor</th>
+                  <th>Tingkat</th>
+                  <th>Status</th>
+                  <th>Pembaruan</th>
+                  <th style="text-align: right;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="operator-predictions-table">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: EKSEKUTIF BAPPEDA / KEBIJAKAN       -->
+    <!-- ========================================== -->
+    <section id="policy-view" class="tab-view">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-chart-pie text-primary"></i> Dashboard Kebijakan (Bappeda)
+          </h1>
+          <p class="section-desc">Prioritas tindakan darurat dan simulasi dampak intervensi anggaran.</p>
+        </div>
+      </div>
+
+      <!-- Simulasi Intervensi (F-10) -->
+      <div class="form-card" style="margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.85rem;">
+          <div>
+            <h2 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.45rem;">
+              <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> Simulasi Dampak Kebijakan
+            </h2>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Proyeksi penurunan risiko gagal panen berdasarkan pilihan jenis intervensi.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runSimulasiIntervensi()">
+            <i class="fa-solid fa-play"></i> Simulasikan Dampak
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: flex-end;">
+          <div class="form-group">
+            <label class="form-label" for="sim-region">Target Kabupaten:</label>
+            <select id="sim-region" class="form-control" onchange="updateSimulasiDisplay()">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="sim-type">Bentuk Intervensi:</label>
+            <select id="sim-type" class="form-control">
+              <option value="pompanisasi">Pompanisasi & Pintu Waduk (-35% Risiko)</option>
+              <option value="benih">Benih Tahan Kekeringan (-25% Risiko)</option>
+              <option value="asuransi">Aktivasi Asuransi Usaha Tani AUTP (-20% Risiko)</option>
+              <option value="komprehensif">Bantuan BTT Darurat Terpadu (-45% Risiko)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Proyeksi Skor Risiko:</label>
+            <div style="display: flex; align-items: center; gap: 0.65rem; background: var(--bg-surface); padding: 0.5rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+              <span id="sim-score-before" style="font-size: 1.1rem; font-weight: 800; color: var(--risk-high);">89</span>
+              <i class="fa-solid fa-arrow-right text-muted" style="font-size: 0.75rem;"></i>
+              <span id="sim-score-after" style="font-size: 1.1rem; font-weight: 800; color: var(--risk-low);">54</span>
+              <span style="font-size: 0.725rem; color: var(--risk-low); font-weight: 600; margin-left: auto;">Efektif</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabel Kabupaten yang Membutuhkan Intervensi Segera -->
+      <div class="table-card">
+        <div style="padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-bell text-primary"></i> Rekomendasi Prioritas Wilayah
+          </h2>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Tinjau dan setujui tindakan darurat</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Kabupaten</th>
+                <th>Skor Risiko</th>
+                <th>Faktor Kritis</th>
+                <th>Rekomendasi Tindakan AI</th>
+                <th>Tindakan Kebijakan</th>
+              </tr>
+            </thead>
+            <tbody id="policy-recommendations-table">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: MANAJEMEN INTERVENSI (F-05 CRUD)    -->
+    <!-- ========================================== -->
+    <section id="intervention-view" class="tab-view">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-hand-holding-hand text-primary"></i> Program Intervensi
+          </h1>
+          <p class="section-desc">Pencatatan alokasi program dan pemantauan status penyaluran lapangan.</p>
+        </div>
+        <div class="action-buttons" style="flex-direction: row;">
+          <button class="btn btn-primary btn-sm" onclick="openNewInterventionModal()">
+            <i class="fa-solid fa-plus"></i> Buat Intervensi
+          </button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Kode</th>
+                <th>Wilayah</th>
+                <th>Nama Program</th>
+                <th>Target</th>
+                <th>Sumber Dana</th>
+                <th>Status</th>
+                <th>Batas Waktu</th>
+                <th style="text-align: right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="interventions-table-body">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: GRAFIK TREN (F-09) & LAPORAN        -->
+    <!-- ========================================== -->
+    <section id="trends-view" class="tab-view">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-chart-line text-primary"></i> Analisis Tren Satelit
+          </h1>
+          <p class="section-desc">Historis indeks vegetasi FAPAR 12 bulan dan curah hujan bulanan.</p>
+        </div>
+        <div class="filter-group">
+          <label for="trend-region-select" class="form-label" style="margin: 0;">Kabupaten:</label>
+          <select id="trend-region-select" class="custom-select" onchange="updateTrendsChart(this.value)">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.25rem;">
+        <div class="form-card">
+          <h2 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-satellite text-primary"></i> Anomali Vegetasi FAPAR (12 Bulan)
+          </h2>
+          <div style="height: 270px;">
+            <canvas id="chart-fapar"></canvas>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h2 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-cloud-rain text-primary"></i> Curah Hujan Bulanan (mm) vs Normal
+          </h2>
+          <div style="height: 270px;">
+            <canvas id="chart-rainfall"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: HALAMAN PUBLIK / TRANSPARANSI (F-06)-->
+    <!-- ========================================== -->
+    <section id="public-view" class="tab-view">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">
+            <i class="fa-solid fa-bullhorn text-primary"></i> Portal Transparansi Publik
+          </h1>
+          <p class="section-desc">Informasi situasi pangan terbuka bagi masyarakat dan petani binaan.</p>
+        </div>
+        <span class="badge-status in_progress" style="padding: 0.35rem 0.75rem;">
+          <i class="fa-solid fa-lock"></i> Mode Publik
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem;">
+        <div class="table-card">
+          <div style="padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle);">
+            <h2 style="font-size: 0.95rem; font-weight: 700;">Status Kerentanan Pangan Wilayah</h2>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Kabupaten</th>
+                  <th>Komoditas</th>
+                  <th>Kondisi</th>
+                  <th>Intervensi Pemda</th>
+                </tr>
+              </thead>
+              <tbody id="public-table-body">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-card" style="height: fit-content;">
+          <h2 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.45rem;">
+            <i class="fa-solid fa-circle-info text-primary"></i> Kontak Bantuan Petani
+          </h2>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.4;">
+            Jika sawah Anda di zona waspada kekeringan mengalami gangguan air, hubungi petugas penyuluh lapangan terdekat.
+          </p>
+
+          <div style="background: var(--bg-surface); padding: 0.65rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.65rem; font-size: 0.775rem;">
+            <strong>Posko Ketahanan Pangan:</strong><br>
+            <i class="fa-solid fa-phone" style="margin-right: 0.25rem; color: var(--primary);"></i> 061-8212345 (Dinas Pertanian)
+          </div>
+
+          <div style="background: var(--bg-surface); padding: 0.65rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.775rem;">
+            <strong>Asuransi Usaha Tani (AUTP):</strong><br>
+            <i class="fa-solid fa-shield-heart" style="margin-right: 0.25rem; color: var(--risk-high);"></i> Layanan klaim Jasindo & PPL
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: BUAT INTERVENSI BARU (CRUD F-05)    -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-intervention">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="fa-solid fa-plus-circle text-primary"></i> Buat Intervensi Baru
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-intervention')">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="form-new-intervention" onsubmit="handleCreateIntervention(event)">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-region">Wilayah Target:</label>
+            <select id="int-region" class="form-control" required>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-title">Nama Program:</label>
+            <input type="text" id="int-title" class="form-control" placeholder="Contoh: Distribusi Pompa Air & Benih Tahan Kering" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-type">Kategori:</label>
+            <select id="int-type" class="form-control">
+              <option value="Infrastruktur Irigasi Darurat">Infrastruktur Irigasi Darurat</option>
+              <option value="Bantuan Sarpras & Benih">Bantuan Sarpras & Benih</option>
+              <option value="Kompensasi Finansial & AUTP">Kompensasi Finansial & AUTP</option>
+              <option value="Stabilisasi Harga & Pasar Murah">Stabilisasi Harga & Pasar Murah</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-target">Target Penerima:</label>
+            <input type="text" id="int-target" class="form-control" placeholder="Contoh: 3.500 Petani di 4 Kecamatan" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-budget">Sumber Dana:</label>
+            <input type="text" id="int-budget" class="form-control" placeholder="Contoh: BTT APBD / APBN Kementan" required>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="int-deadline">Batas Waktu Pelaksanaan:</label>
+            <input type="date" id="int-deadline" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="int-notes">Catatan Teknis:</label>
+            <textarea id="int-notes" class="form-control" placeholder="Catatan lapangan..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-intervention')">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm">Simpan Intervensi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: OVERRIDE PREDIKSI AI (F-04)         -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-override">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="fa-solid fa-pen-ruler text-primary"></i> Penyesuaian Skor Risiko
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-override')">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="form-override" onsubmit="handleOverrideSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="override-region-id">
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label">Wilayah:</label>
+            <div id="override-region-name" style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.85rem;">
+            <label class="form-label" for="override-score">Skor Risiko Baru (0 - 100):</label>
+            <input type="number" id="override-score" class="form-control" min="0" max="100" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="override-reason">Alasan Penyesuaian (Audit Trail):</label>
+            <textarea id="override-reason" class="form-control" placeholder="Tuliskan temuan faktual lapangan (contoh: 'Survei membuktikan ketersediaan pasokan sungai cadangan')..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-override')">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm">Simpan Koreksi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: EKSPOR LAPORAN (F-08)               -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-export">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="fa-solid fa-arrow-down-to-line text-primary"></i> Ekspor Laporan
+        </h2>
+        <button class="modal-close" onclick="closeModal('modal-export')">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 1rem;">
+          Pilih format dokumen resmi situasi ketahanan pangan:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+          <button class="btn btn-secondary" style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: var(--radius-md);" onclick="downloadSimulatedExport('csv')">
+            <i class="fa-solid fa-file-csv" style="font-size: 1.25rem; color: var(--risk-low);"></i>
+            <div style="text-align: left; margin-left: 0.5rem;">
+              <strong style="display: block; font-size: 0.85rem;">Dataset Lengkap (.CSV)</strong>
+              <span style="font-size: 0.725rem; color: var(--text-muted);">Data mentah anomali FAPAR, curah hujan, dan skor risiko.</span>
+            </div>
+          </button>
+
+          <button class="btn btn-secondary" style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: var(--radius-md);" onclick="downloadSimulatedExport('pdf')">
+            <i class="fa-solid fa-file-pdf" style="font-size: 1.25rem; color: var(--risk-high);"></i>
+            <div style="text-align: left; margin-left: 0.5rem;">
+              <strong style="display: block; font-size: 0.85rem;">Ringkasan Eksekutif (.PDF)</strong>
+              <span style="font-size: 0.725rem; color: var(--text-muted);">Dokumen cetak siap presentasi untuk pimpinan daerah.</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modal-export')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-box"></div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div>
+        <strong>PantauPangan</strong> • Sistem Peringatan Dini Ketahanan Pangan
+      </div>
+      <div>
+        Data: HDX JRC (FAPAR), BMKG/CH, &amp; BPS RI. Light Apple Aesthetic.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Leaflet & Chart.js Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Application Logic -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
